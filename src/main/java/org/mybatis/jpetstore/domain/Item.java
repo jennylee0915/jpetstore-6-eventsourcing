@@ -15,8 +15,14 @@
  */
 package org.mybatis.jpetstore.domain;
 
+import org.mybatis.jpetstore.core.event.DomainEvent;
+import org.mybatis.jpetstore.core.event.InventoryChangeEvent;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * The Class Item.
@@ -40,6 +46,44 @@ public class Item implements Serializable {
   private String attribute5;
   private Product product;
   private int quantity;
+
+  private List<DomainEvent> eventCache = new ArrayList<>();
+
+  public Item(String itemId) {
+    this.eventCache = new ArrayList<>();
+    this.itemId = itemId;
+  }
+
+  public Item() {
+
+  }
+
+  public void changeQuantity(int quantityChange) {
+    InventoryChangeEvent event = new InventoryChangeEvent(getStreamId(), Item.class.getName(), this.itemId, quantityChange, new Date().getTime());
+    cause(event);
+  }
+
+  public String getStreamId() {
+    return Item.class.getName() + "." + this.itemId;
+  }
+
+  private void cause(DomainEvent event) {
+    mutate(event);
+    eventCache.add(event);
+  }
+
+  public void mutate(DomainEvent event) {
+    if (event instanceof InventoryChangeEvent) {
+      applyInventoryChangeEvent((InventoryChangeEvent) event);
+    } else {
+      throw new IllegalArgumentException("Unsupported event type");
+    }
+  }
+
+  private void applyInventoryChangeEvent(InventoryChangeEvent event) {
+    this.quantity += event.getChangeInQuantity();
+  }
+
 
   public String getItemId() {
     return itemId;
@@ -142,4 +186,7 @@ public class Item implements Serializable {
     return "(" + getItemId() + "-" + getProduct().getProductId() + ")";
   }
 
+  public List<DomainEvent> getEvents() {
+    return this.eventCache;
+  }
 }

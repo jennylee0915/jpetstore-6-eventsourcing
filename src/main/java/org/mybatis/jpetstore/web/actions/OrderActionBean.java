@@ -18,6 +18,7 @@ package org.mybatis.jpetstore.web.actions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpSession;
 
@@ -26,7 +27,10 @@ import net.sourceforge.stripes.action.Resolution;
 import net.sourceforge.stripes.action.SessionScope;
 import net.sourceforge.stripes.integration.spring.SpringBean;
 
+import org.mybatis.jpetstore.core.EventStore;
 import org.mybatis.jpetstore.domain.Order;
+import org.mybatis.jpetstore.repository.EventSourcedAccountRepository;
+import org.mybatis.jpetstore.repository.EventSourcedOrderRepository;
 import org.mybatis.jpetstore.service.OrderService;
 
 /**
@@ -50,6 +54,11 @@ public class OrderActionBean extends AbstractActionBean {
   @SpringBean
   private transient OrderService orderService;
 
+  private final static EventStore eventStore = new EventStore(
+          "esdb://127.0.0.1:2113?tls=false&keepAliveTimeout=10000&keepAliveInterval=10000");
+
+  private final static EventSourcedOrderRepository repository = new EventSourcedOrderRepository(eventStore);
+
   private Order order = new Order();
   private boolean shippingAddressRequired;
   private boolean confirmed;
@@ -59,11 +68,11 @@ public class OrderActionBean extends AbstractActionBean {
     CARD_TYPE_LIST = Collections.unmodifiableList(Arrays.asList("Visa", "MasterCard", "American Express"));
   }
 
-  public int getOrderId() {
+  public String getOrderId() {
     return order.getOrderId();
   }
 
-  public void setOrderId(int orderId) {
+  public void setOrderId(String orderId) {
     order.setOrderId(orderId);
   }
 
@@ -107,7 +116,10 @@ public class OrderActionBean extends AbstractActionBean {
   public Resolution listOrders() {
     HttpSession session = context.getRequest().getSession();
     AccountActionBean accountBean = (AccountActionBean) session.getAttribute("/actions/Account.action");
-    orderList = orderService.getOrdersByUsername(accountBean.getAccount().getUsername());
+    //orderList = orderService.getOrdersByUsername(accountBean.getAccount().getUsername());
+    orderList = repository.findAll().stream()
+            .filter(order -> order.getUsername().equals(accountBean.getAccount().getUsername()))
+            .collect(Collectors.toList());
     return new ForwardResolution(LIST_ORDERS);
   }
 
@@ -149,7 +161,12 @@ public class OrderActionBean extends AbstractActionBean {
       return new ForwardResolution(CONFIRM_ORDER);
     } else if (getOrder() != null) {
 
-      orderService.insertOrder(order);
+      //還沒改好
+
+      //this.repository.save(order);
+      //order = this.repository.findBy(order.getOrderId());
+
+      //orderService.insertOrder(order);
 
       CartActionBean cartBean = (CartActionBean) session.getAttribute("/actions/Cart.action");
       cartBean.clear();

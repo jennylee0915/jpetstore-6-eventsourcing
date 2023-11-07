@@ -15,12 +15,29 @@
  */
 package org.mybatis.jpetstore.domain;
 
+import org.mybatis.jpetstore.core.event.*;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+/**
+ * 這個Order類代表了一個訂單，包括訂單的詳細信息、付款信息、運送和帳單地址、訂單的狀態等。其中也包括了一個List<LineItem>的集合，表示訂單中的各個項目。
+ *
+ * 以下是一些主要的屬性和方法：
+ *
+ * 屬性
+ * 訂單ID（orderId）：訂單的唯一標識符。
+ * 用戶名（username）：下訂單的用戶名。
+ * 訂單日期（orderDate）：訂單的日期。
+ * 運送和帳單地址：包括運送和帳單的地址、城市、州、郵政編碼和國家。
+ * 付款信息：如信用卡號、到期日和卡類型。
+ * 總價格（totalPrice）：訂單的總價格。
+ * 訂單狀態（status）：表示訂單的當前狀態。
+ * 訂單項目（lineItems）：訂單中的每一個項目，每個項目由LineItem對象表示。
+ * 方法
+ * initOrder(Account account, Cart cart)：通過帳戶和購物車的信息初始化訂單。這個方法會設置訂單的所有相關信息，如運送地址、帳單地址、總價格等。
+ * addLineItem(CartItem cartItem) 和 addLineItem(LineItem lineItem)：向訂單中添加項目。可以直接添加LineItem對象，或者通過CartItem對象創建新的LineItem。
+ */
 
 /**
  * The Class Order.
@@ -31,7 +48,7 @@ public class Order implements Serializable {
 
   private static final long serialVersionUID = 6321792448424424931L;
 
-  private int orderId;
+  private String orderId;
   private String username;
   private Date orderDate;
   private String shipAddress1;
@@ -58,12 +75,79 @@ public class Order implements Serializable {
   private String locale;
   private String status;
   private List<LineItem> lineItems = new ArrayList<>();
+  private List<DomainEvent> eventCache = new ArrayList<>();
 
-  public int getOrderId() {
-    return orderId;
+
+  public Order(String orderId) {
+    this.eventCache = new ArrayList<>();
+    this.orderId = orderId;
   }
 
-  public void setOrderId(int orderId) {
+  public Order() {
+    this.eventCache = new ArrayList<>();
+    this.orderId = UUID.randomUUID().toString();
+    OrderCreatedEvent event = new OrderCreatedEvent(getStreamId(), Order.class.getName(), new Date().getTime());
+    cause(event);
+  }
+
+  public void updateInventory(String itemId, int increment){
+    InventoryChangeEvent event = new InventoryChangeEvent(getStreamId(), Order.class.getName(), itemId,increment, new Date().getTime());
+    cause(event);
+  }
+
+  public String getOrderId() {
+    return this.orderId;
+  }
+
+  public String getStreamId() {
+    return Order.class.getName() + "." + this.orderId;
+  }
+
+  //產生事件並加入到eventcache，同時負責調用mutate確保聚合根“內部”狀態更新
+  private void cause(DomainEvent event) {
+    mutate(event);
+    eventCache.add(event);
+  }
+
+  //基於特定事件改變聚合根“內部”狀態
+  public void mutate(DomainEvent event) {
+    if (event instanceof EntityCreatedEvent) {
+      // pass
+    } else if (event instanceof AttributeUpdatedEvent) {
+      applyUpdatedEvent((AttributeUpdatedEvent) event);
+    } else if (event instanceof OrderCreatedEvent) {
+
+    } else
+      throw new IllegalArgumentException();
+  }
+
+  private void applyUpdatedEvent(AttributeUpdatedEvent event) {
+    switch (event.getName()) {
+      case "username":
+        this.username = (String) event.getValue();
+        break;
+      case "orderDate":
+        this.orderDate = (Date) event.getValue();
+        break;
+      case "orderId":
+        this.orderId = (String) event.getValue();
+        break;
+    }
+  }
+
+  private AttributeUpdatedEvent generateAttributeUpdatedEvent(String key, Object value) {
+    AttributeUpdatedEvent event = new AttributeUpdatedEvent(getStreamId(), Order.class.getName(),
+            new Date().getTime());
+    event.setName(key);
+    event.setValue(value);
+    return event;
+  }
+
+  //public int getOrderId() {
+    //return orderId;
+  //}
+
+  public void setOrderId(String orderId) {
     this.orderId = orderId;
   }
 
@@ -72,7 +156,11 @@ public class Order implements Serializable {
   }
 
   public void setUsername(String username) {
-    this.username = username;
+    if (this.username == null || !this.username.equals(username)) {
+      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("username", username);
+      cause(event);
+    }
+    //this.username = username;
   }
 
   public Date getOrderDate() {
@@ -80,7 +168,11 @@ public class Order implements Serializable {
   }
 
   public void setOrderDate(Date orderDate) {
-    this.orderDate = orderDate;
+    if (this.orderDate == null || !this.orderDate.equals(orderDate)) {
+      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("orderDate", orderDate);
+      cause(event);
+    }
+    //this.orderDate = orderDate;
   }
 
   public String getShipAddress1() {
@@ -331,5 +423,16 @@ public class Order implements Serializable {
   public void addLineItem(LineItem lineItem) {
     lineItems.add(lineItem);
   }
+
+  public List<DomainEvent> getEvents() {
+    return this.eventCache;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("Order{ orderId = '%s', username = '%s', orderDate = '%s' ",
+            orderId, username, orderDate);
+  }
+
 
 }
