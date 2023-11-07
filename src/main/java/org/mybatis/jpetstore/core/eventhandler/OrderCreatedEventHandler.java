@@ -15,11 +15,11 @@ public class OrderCreatedEventHandler implements DomainEventHandler<OrderCreated
         /** x錯誤的方法x
         Order order = event.getOrder();
 
-        // 插入订单到数据库
+        
         orderMapper.insertOrder(order);
         orderMapper.insertOrderStatus(order);
 
-        // 插入每个订单项到数据库
+    
         order.getLineItems().forEach(lineItem -> {
             lineItem.setOrderId(order.getOrderId());
             lineItemMapper.insertLineItem(lineItem);
