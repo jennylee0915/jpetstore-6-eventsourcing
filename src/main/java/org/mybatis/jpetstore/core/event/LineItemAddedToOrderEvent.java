@@ -15,20 +15,39 @@
  */
 package org.mybatis.jpetstore.core.event;
 
-import org.mybatis.jpetstore.domain.Order;
+import java.math.BigDecimal;
 
-public class OrderCreatedEvent extends DomainEvent {
+import org.mybatis.jpetstore.domain.Item;
 
-  private Order order;
-  private String orderId;
+public class LineItemAddedToOrderEvent extends DomainEvent {
+  private final String itemId;
+  private final int quantity;
+  private final BigDecimal unitPrice;
 
-  public OrderCreatedEvent(String streamId, String entityType, String orderId, long timestamp) {
+  private Item item;
+
+  public LineItemAddedToOrderEvent(String streamId, String entityType, Item item, String itemId, int quantity,
+      BigDecimal unitPrice, long timestamp) {
     super(streamId, entityType, timestamp);
-    this.orderId = orderId;
+    this.item = item;
+    this.itemId = itemId;
+    this.quantity = quantity;
+    this.unitPrice = unitPrice;
   }
 
-  public String getOrderId() {
-    return orderId;
+  public String getItemId() {
+    return itemId;
   }
 
+  public int getQuantity() {
+    return quantity;
+  }
+
+  public BigDecimal getUnitPrice() {
+    return unitPrice;
+  }
+
+  public Item getItem() {
+    return item;
+  }
 }

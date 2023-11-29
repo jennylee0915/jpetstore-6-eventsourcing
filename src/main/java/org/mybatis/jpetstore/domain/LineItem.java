@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class LineItem implements Serializable {
 
   private static final long serialVersionUID = 6804536240033522156L;
 
-  private int orderId;
+  private String orderId;
   private int lineNumber;
   private int quantity;
   private String itemId;
@@ -56,11 +56,11 @@ public class LineItem implements Serializable {
     calculateTotal();
   }
 
-  public int getOrderId() {
+  public String getOrderId() {
     return orderId;
   }
 
-  public void setOrderId(int orderId) {
+  public void setOrderId(String orderId) {
     this.orderId = orderId;
   }
 
@@ -115,4 +115,7 @@ public class LineItem implements Serializable {
         .orElse(null);
   }
 
+  public void setTotal(BigDecimal multiply) {
+    total = multiply;
+  }
 }

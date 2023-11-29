@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ class OrderMapperTest {
   void insertOrder() {
     // given
     Order order = new Order();
-    order.setOrderId(1);
+    order.setOrderId("1");
     order.setOrderDate(java.sql.Timestamp.valueOf(LocalDateTime.of(2018, 12, 31, 23, 59, 59)));
     order.setUsername("j2ee");
     order.setCardType("Visa");
@@ -101,7 +101,7 @@ class OrderMapperTest {
   void insertOrderStatus() {
     // given
     Order order = new Order();
-    order.setOrderId(1);
+    order.setOrderId("1");
     order.setOrderDate(java.sql.Timestamp.valueOf(LocalDateTime.of(2018, 12, 31, 23, 59, 59)));
     order.setStatus("OK");
 
@@ -121,7 +121,7 @@ class OrderMapperTest {
   void getOrdersByUsername() {
     // given
     Order newOrder = new Order();
-    newOrder.setOrderId(1);
+    newOrder.setOrderId("1");
     newOrder.setOrderDate(java.sql.Timestamp.valueOf(LocalDateTime.of(2018, 12, 31, 23, 59, 59)));
     newOrder.setStatus("OK");
     newOrder.setUsername("j2ee");
@@ -185,7 +185,7 @@ class OrderMapperTest {
   void getOrder() {
     // given
     Order newOrder = new Order();
-    newOrder.setOrderId(1);
+    newOrder.setOrderId("1");
     newOrder.setOrderDate(java.sql.Timestamp.valueOf(LocalDateTime.of(2018, 12, 31, 23, 59, 59)));
     newOrder.setStatus("OK");
     newOrder.setUsername("j2ee");
@@ -215,7 +215,7 @@ class OrderMapperTest {
     mapper.insertOrderStatus(newOrder);
 
     // when
-    Order order = mapper.getOrder(1);
+    Order order = mapper.getOrder("1");
 
     // then
     assertThat(order.getOrderId()).isEqualTo(newOrder.getOrderId());

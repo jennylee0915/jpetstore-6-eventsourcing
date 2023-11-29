@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,17 +15,22 @@
  */
 package org.mybatis.jpetstore.service;
 
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
-import org.mybatis.jpetstore.domain.Item;
+import org.mybatis.jpetstore.core.EventStore;
+import org.mybatis.jpetstore.core.event.DomainEvent;
+import org.mybatis.jpetstore.core.event.EntityNotFoundException;
+import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
+import org.mybatis.jpetstore.core.event.OrderInsertedEvent;
 import org.mybatis.jpetstore.domain.Order;
+import org.mybatis.jpetstore.domain.OrderDTO;
 import org.mybatis.jpetstore.domain.Sequence;
 import org.mybatis.jpetstore.mapper.ItemMapper;
 import org.mybatis.jpetstore.mapper.LineItemMapper;
 import org.mybatis.jpetstore.mapper.OrderMapper;
 import org.mybatis.jpetstore.mapper.SequenceMapper;
+import org.mybatis.jpetstore.repository.EventSourcedOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +46,9 @@ public class OrderService {
   private final OrderMapper orderMapper;
   private final SequenceMapper sequenceMapper;
   private final LineItemMapper lineItemMapper;
+  private final static EventStore eventStore = new EventStore(
+      "esdb://127.0.0.1:2113?tls=false&keepAliveTimeout=10000&keepAliveInterval=10000");
+  private final static EventSourcedOrderRepository repository = new EventSourcedOrderRepository(eventStore);
 
   public OrderService(ItemMapper itemMapper, OrderMapper orderMapper, SequenceMapper sequenceMapper,
       LineItemMapper lineItemMapper) {
@@ -58,22 +66,33 @@ public class OrderService {
    */
   @Transactional
   public void insertOrder(Order order) {
-    order.setOrderId(getNextId("ordernum"));
-    order.getLineItems().forEach(lineItem -> {
-      String itemId = lineItem.getItemId();
-      Integer increment = lineItem.getQuantity();
-      Map<String, Object> param = new HashMap<>(2);
-      param.put("itemId", itemId);
-      param.put("increment", increment);
-      itemMapper.updateInventoryQuantity(param);
-    });
 
-    orderMapper.insertOrder(order);
-    orderMapper.insertOrderStatus(order);
+    OrderDTO orderDTO = order.toDTO();
+    OrderInsertedEvent insertedEvent = new OrderInsertedEvent(order.getStreamId(), Order.class.getName(), orderDTO,
+        new Date().getTime());
+    order.cause(insertedEvent);
+
     order.getLineItems().forEach(lineItem -> {
-      lineItem.setOrderId(order.getOrderId());
-      lineItemMapper.insertLineItem(lineItem);
+      InventoryUpdatedEvent inventoryEvent = new InventoryUpdatedEvent(order.getStreamId(), Order.class.getName(),
+          lineItem.getItemId(), -lineItem.getQuantity(), new Date().getTime());
+      order.cause(inventoryEvent);
     });
+    // order.setOrderId(getNextId("ordernum"));
+    // order.getLineItems().forEach(lineItem -> {
+    // String itemId = lineItem.getItemId();
+    // Integer increment = lineItem.getQuantity();
+    // Map<String, Object> param = new HashMap<>(2);
+    // param.put("itemId", itemId);
+    // param.put("increment", increment);
+    // itemMapper.updateInventoryQuantity(param);
+    // });
+
+    // orderMapper.insertOrder(order);
+    // orderMapper.insertOrderStatus(order);
+    // order.getLineItems().forEach(lineItem -> {
+    // lineItem.setOrderId(order.getOrderId());
+    // lineItemMapper.insertLineItem(lineItem);
+    // });
   }
 
   /**
@@ -84,18 +103,30 @@ public class OrderService {
    *
    * @return the order
    */
+
   @Transactional
-  public Order getOrder(int orderId) {
-    Order order = orderMapper.getOrder(orderId);
-    order.setLineItems(lineItemMapper.getLineItemsByOrderId(orderId));
+  public Order getOrder(String orderId) {
+    String streamId = Order.class.getName() + "." + orderId;
+    List<DomainEvent> events = eventStore.getStream(streamId);
+    if (events.isEmpty()) {
+      throw new EntityNotFoundException("Order not found: " + orderId);
+    }
 
-    order.getLineItems().forEach(lineItem -> {
-      Item item = itemMapper.getItem(lineItem.getItemId());
-      item.setQuantity(itemMapper.getInventoryQuantity(lineItem.getItemId()));
-      lineItem.setItem(item);
-    });
-
+    Order order = new Order(orderId); // 使用带有订单ID的构造函数
+    for (DomainEvent event : events) {
+      order.mutate(event);
+    }
     return order;
+    // Order order = orderMapper.getOrder(orderId);
+    // order.setLineItems(lineItemMapper.getLineItemsByOrderId(orderId));
+
+    // order.getLineItems().forEach(lineItem -> {
+    // Item item = itemMapper.getItem(lineItem.getItemId());
+    // item.setQuantity(itemMapper.getInventoryQuantity(lineItem.getItemId()));
+    // lineItem.setItem(item);
+    // });
+
+    // return order;
   }
 
   /**
@@ -106,8 +137,9 @@ public class OrderService {
    *
    * @return the orders by username
    */
+
   public List<Order> getOrdersByUsername(String username) {
-    return orderMapper.getOrdersByUsername(username);
+    return repository.findByUsername(username);
   }
 
   /**
@@ -118,15 +150,10 @@ public class OrderService {
    *
    * @return the next id
    */
-  public int getNextId(String name) {
-    Sequence sequence = sequenceMapper.getSequence(new Sequence(name, -1));
-    if (sequence == null) {
-      throw new RuntimeException(
-          "Error: A null sequence was returned from the database (could not get next " + name + " sequence).");
-    }
-    Sequence parameterObject = new Sequence(name, sequence.getNextId() + 1);
-    sequenceMapper.updateSequence(parameterObject);
-    return sequence.getNextId();
-  }
-
+  /**
+   * public int getNextId(String name) { Sequence sequence = sequenceMapper.getSequence(new Sequence(name, -1)); if
+   * (sequence == null) { throw new RuntimeException( "Error: A null sequence was returned from the database (could not
+   * get next " + name + " sequence)."); } Sequence parameterObject = new Sequence(name, sequence.getNextId() + 1);
+   * sequenceMapper.updateSequence(parameterObject); return sequence.getNextId(); }
+   **/
 }

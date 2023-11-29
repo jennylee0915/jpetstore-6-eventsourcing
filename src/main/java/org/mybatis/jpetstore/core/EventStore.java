@@ -16,17 +16,21 @@
 package org.mybatis.jpetstore.core;
 
 import com.eventstore.dbclient.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import org.mybatis.jpetstore.core.event.AttributeUpdatedEvent;
-import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.EntityCreatedEvent;
+import org.mybatis.jpetstore.core.event.*;
+import org.mybatis.jpetstore.domain.Account;
+import org.mybatis.jpetstore.domain.Cart;
+import org.mybatis.jpetstore.domain.Item;
+import org.mybatis.jpetstore.domain.OrderDTO;
 
 public class EventStore {
   private EventStoreDBClient client;
@@ -99,19 +103,91 @@ public class EventStore {
     return results;
   }
 
-  public static DomainEvent deserialize(Map map) {
+  public static DomainEvent deserialize(Map map) throws JsonProcessingException {
     String eventType = (String) map.get("eventType");
     DomainEvent result = null;
-    if ("org.mybatis.jpetstore.core.event.EntityCreatedEvent".equals(eventType)) {
-      result = new EntityCreatedEvent((String) map.get("streamId"), (String) map.get("entityType"),
-          (long) map.get("timestamp"));
-    } else if ("org.mybatis.jpetstore.core.event.AttributeUpdatedEvent".equals(eventType)) {
-      AttributeUpdatedEvent event = new AttributeUpdatedEvent((String) map.get("streamId"),
-          (String) map.get("entityType"), (long) map.get("timestamp"));
-      event.setName((String) map.get("name"));
-      event.setValue(map.get("value"));
-      result = event;
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    switch (eventType) {
+      case "org.mybatis.jpetstore.core.event.EntityCreatedEvent":
+        EntityCreatedEvent entityCreatedEvent = new EntityCreatedEvent((String) map.get("streamId"),
+            (String) map.get("entityType"), (long) map.get("timestamp"));
+        result = entityCreatedEvent;
+        break;
+
+      case "org.mybatis.jpetstore.core.event.AttributeUpdatedEvent":
+        AttributeUpdatedEvent attributeUpdatedEvent = new AttributeUpdatedEvent((String) map.get("streamId"),
+            (String) map.get("entityType"), (long) map.get("timestamp"));
+        attributeUpdatedEvent.setName((String) map.get("name"));
+        attributeUpdatedEvent.setValue(map.get("value"));
+        result = attributeUpdatedEvent;
+        break;
+
+      case "org.mybatis.jpetstore.core.event.OrderCreatedEvent":
+        OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent((String) map.get("streamId"),
+            (String) map.get("entityType"), (String) map.get("orderId"), (long) map.get("timestamp"));
+        result = orderCreatedEvent;
+        break;
+
+      case "org.mybatis.jpetstore.core.event.OrderInitializedEvent":
+        Map<String, Object> accountMap = (Map<String, Object>) map.get("account");
+        Map<String, Object> cartMap = (Map<String, Object>) map.get("cart");
+
+        String accountJsonString = mapper.writeValueAsString(accountMap);
+        String cartJsonString = mapper.writeValueAsString(cartMap);
+
+        Account account = mapper.readValue(accountJsonString, Account.class);
+        Cart cart = mapper.readValue(cartJsonString, Cart.class);
+
+        OrderInitializedEvent orderInitializedEvent = new OrderInitializedEvent((String) map.get("streamId"),
+            (String) map.get("entityType"), account, cart, (long) map.get("timestamp"));
+        result = orderInitializedEvent;
+        break;
+
+      case "org.mybatis.jpetstore.core.event.LineItemAddedToOrderEvent":
+        Map<String, Object> itemMap = (Map<String, Object>) map.get("item");
+
+        String itemJsonString = mapper.writeValueAsString(itemMap);
+
+        Item item = mapper.readValue(itemJsonString, Item.class);
+
+        LineItemAddedToOrderEvent lineItemAddedToOrderEvent = new LineItemAddedToOrderEvent(
+            (String) map.get("streamId"), (String) map.get("entityType"), item, (String) map.get("itemId"),
+            (int) map.get("quantity"), (BigDecimal) map.get("unitPrice"), (long) map.get("timestamp"));
+        result = lineItemAddedToOrderEvent;
+        break;
+
+      case "org.mybatis.jpetstore.core.event.OrderInsertedEvent":
+        Map<String, Object> orderMap = (Map<String, Object>) map.get("orderDTO");
+
+        String orderJsonString = mapper.writeValueAsString(orderMap);
+
+        OrderDTO orderDTO = mapper.readValue(orderJsonString, OrderDTO.class);
+
+        OrderInsertedEvent orderInsertedEvent = new OrderInsertedEvent((String) map.get("streamId"),
+            (String) map.get("entityType"), orderDTO, (long) map.get("timestamp"));
+        result = orderInsertedEvent;
+        break;
+
+      case "org.mybatis.jpetstore.core.event.InventoryUpdatedEvent":
+        InventoryUpdatedEvent inventoryUpdatedEvent = new InventoryUpdatedEvent((String) map.get("streamId"),
+            (String) map.get("entityType"), (String) map.get("itemId"), (int) map.get("quantityChange"),
+            (long) map.get("timestamp"));
+        result = inventoryUpdatedEvent;
+        break;
+
     }
     return result;
   }
+
+  /*
+   * if ("org.mybatis.jpetstore.core.event.EntityCreatedEvent".equals(eventType)) { result = new
+   * EntityCreatedEvent((String) map.get("streamId"), (String) map.get("entityType"), (long) map.get("timestamp")); }
+   * else if ("org.mybatis.jpetstore.core.event.AttributeUpdatedEvent".equals(eventType)) { AttributeUpdatedEvent event
+   * = new AttributeUpdatedEvent((String) map.get("streamId"), (String) map.get("entityType"), (long)
+   * map.get("timestamp")); event.setName((String) map.get("name")); event.setValue(map.get("value")); result = event; }
+   * return result;
+   */
+
 }

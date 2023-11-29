@@ -15,7 +15,9 @@
  */
 package org.mybatis.jpetstore.core.event;
 
-public abstract class DomainEvent {
+import java.io.Serializable;
+
+public abstract class DomainEvent implements Serializable {
   private String entityType;
   private String eventType;
   private long timestamp;

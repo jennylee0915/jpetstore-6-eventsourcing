@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ class LineItemMapperTest {
   void insertLineItem() {
     // given
     LineItem lineItem = new LineItem();
-    lineItem.setOrderId(1);
+    lineItem.setOrderId("1");
     lineItem.setLineNumber(1);
     lineItem.setItemId("EST-1");
     lineItem.setQuantity(4);
@@ -67,7 +67,7 @@ class LineItemMapperTest {
   void getLineItemsByOrderId() {
     // given
     LineItem lineItem = new LineItem();
-    lineItem.setOrderId(1);
+    lineItem.setOrderId("1");
     lineItem.setLineNumber(1);
     lineItem.setItemId("EST-1");
     lineItem.setQuantity(4);
@@ -75,7 +75,7 @@ class LineItemMapperTest {
     mapper.insertLineItem(lineItem);
 
     // when
-    List<LineItem> lineItems = mapper.getLineItemsByOrderId(1);
+    List<LineItem> lineItems = mapper.getLineItemsByOrderId("1");
 
     // then
     assertThat(lineItems).hasSize(1);

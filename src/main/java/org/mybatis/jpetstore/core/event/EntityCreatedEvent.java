@@ -15,7 +15,9 @@
  */
 package org.mybatis.jpetstore.core.event;
 
-public class EntityCreatedEvent extends DomainEvent {
+import java.io.Serializable;
+
+public class EntityCreatedEvent extends DomainEvent implements Serializable {
   public EntityCreatedEvent(String id, String entityType, long timestamp) {
     super(id, entityType, timestamp);
   }

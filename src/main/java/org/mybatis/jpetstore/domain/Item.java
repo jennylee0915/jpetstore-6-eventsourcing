@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.mybatis.jpetstore.domain;
 
-import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.InventoryChangeEvent;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import org.mybatis.jpetstore.core.event.DomainEvent;
+import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
 
 /**
  * The Class Item.
@@ -59,7 +59,8 @@ public class Item implements Serializable {
   }
 
   public void changeQuantity(int quantityChange) {
-    InventoryChangeEvent event = new InventoryChangeEvent(getStreamId(), Item.class.getName(), this.itemId, quantityChange, new Date().getTime());
+    InventoryUpdatedEvent event = new InventoryUpdatedEvent(getStreamId(), Item.class.getName(), this.itemId,
+        quantityChange, new Date().getTime());
     cause(event);
   }
 
@@ -73,17 +74,16 @@ public class Item implements Serializable {
   }
 
   public void mutate(DomainEvent event) {
-    if (event instanceof InventoryChangeEvent) {
-      applyInventoryChangeEvent((InventoryChangeEvent) event);
+    if (event instanceof InventoryUpdatedEvent) {
+      applyInventoryChangeEvent((InventoryUpdatedEvent) event);
     } else {
       throw new IllegalArgumentException("Unsupported event type");
     }
   }
 
-  private void applyInventoryChangeEvent(InventoryChangeEvent event) {
-    this.quantity += event.getChangeInQuantity();
+  private void applyInventoryChangeEvent(InventoryUpdatedEvent event) {
+    this.quantity += event.getQuantityChange();
   }
-
 
   public String getItemId() {
     return itemId;

@@ -26,9 +26,9 @@ public class TestAccountRepo {
 
   public static void main(String[] args) {
     String accountId = testCreate();
-    //testFindBy(accountId);
-    //testAppend(accountId);
-    //testFindBy(accountId, 4);
+    // testFindBy(accountId);
+    // testAppend(accountId);
+    // testFindBy(accountId, 4);
   }
 
   private static void testAppend(String accountId) {
@@ -55,9 +55,9 @@ public class TestAccountRepo {
     Account account = new Account();
     account.setUsername("John");
     account.setPassword("password");
-    //account.setEmail("john@gmail.com");
-    //account.setFirstName("TestF");
-    //account.setLastName("TestL");
+    // account.setEmail("john@gmail.com");
+    // account.setFirstName("TestF");
+    // account.setLastName("TestL");
     System.out.println("======Test Create Account======");
     System.out.println(repository.save(account));
     return account.getAccountId();

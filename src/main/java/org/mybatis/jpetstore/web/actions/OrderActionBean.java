@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.mybatis.jpetstore.web.actions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpSession;
 
@@ -29,7 +28,6 @@ import net.sourceforge.stripes.integration.spring.SpringBean;
 
 import org.mybatis.jpetstore.core.EventStore;
 import org.mybatis.jpetstore.domain.Order;
-import org.mybatis.jpetstore.repository.EventSourcedAccountRepository;
 import org.mybatis.jpetstore.repository.EventSourcedOrderRepository;
 import org.mybatis.jpetstore.service.OrderService;
 
@@ -55,7 +53,7 @@ public class OrderActionBean extends AbstractActionBean {
   private transient OrderService orderService;
 
   private final static EventStore eventStore = new EventStore(
-          "esdb://127.0.0.1:2113?tls=false&keepAliveTimeout=10000&keepAliveInterval=10000");
+      "esdb://127.0.0.1:2113?tls=false&keepAliveTimeout=10000&keepAliveInterval=10000");
 
   private final static EventSourcedOrderRepository repository = new EventSourcedOrderRepository(eventStore);
 
@@ -116,10 +114,7 @@ public class OrderActionBean extends AbstractActionBean {
   public Resolution listOrders() {
     HttpSession session = context.getRequest().getSession();
     AccountActionBean accountBean = (AccountActionBean) session.getAttribute("/actions/Account.action");
-    //orderList = orderService.getOrdersByUsername(accountBean.getAccount().getUsername());
-    orderList = repository.findAll().stream()
-            .filter(order -> order.getUsername().equals(accountBean.getAccount().getUsername()))
-            .collect(Collectors.toList());
+    orderList = orderService.getOrdersByUsername(accountBean.getAccount().getUsername());
     return new ForwardResolution(LIST_ORDERS);
   }
 
@@ -139,6 +134,7 @@ public class OrderActionBean extends AbstractActionBean {
       return new ForwardResolution(AccountActionBean.class);
     } else if (cartBean != null) {
       order.initOrder(accountBean.getAccount(), cartBean.getCart());
+
       return new ForwardResolution(NEW_ORDER);
     } else {
       setMessage("An order could not be created because a cart could not be found.");
@@ -161,12 +157,8 @@ public class OrderActionBean extends AbstractActionBean {
       return new ForwardResolution(CONFIRM_ORDER);
     } else if (getOrder() != null) {
 
-      //還沒改好
-
-      //this.repository.save(order);
-      //order = this.repository.findBy(order.getOrderId());
-
-      //orderService.insertOrder(order);
+      orderService.insertOrder(order);
+      repository.save(order);
 
       CartActionBean cartBean = (CartActionBean) session.getAttribute("/actions/Cart.action");
       cartBean.clear();

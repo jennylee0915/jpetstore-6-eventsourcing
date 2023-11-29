@@ -13,25 +13,20 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package org.mybatis.jpetstore.mapper;
+package org.mybatis.jpetstore.core.event;
 
-import java.util.List;
+import org.mybatis.jpetstore.domain.OrderDTO;
 
-import org.mybatis.jpetstore.domain.Order;
+public class OrderInsertedEvent extends DomainEvent {
 
-/**
- * The Interface OrderMapper.
- *
- * @author Eduardo Macarron
- */
-public interface OrderMapper {
+  private OrderDTO orderDTO;
 
-  List<Order> getOrdersByUsername(String username);
+  public OrderInsertedEvent(String streamId, String entityType, OrderDTO orderDTO, long timestamp) {
+    super(streamId, entityType, timestamp);
+    this.orderDTO = orderDTO;
+  }
 
-  Order getOrder(String orderId);
-
-  void insertOrder(Order order);
-
-  void insertOrderStatus(Order order);
-
+  public OrderDTO getOrderDTO() {
+    return orderDTO;
+  }
 }

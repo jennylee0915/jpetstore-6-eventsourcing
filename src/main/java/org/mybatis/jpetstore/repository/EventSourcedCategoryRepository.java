@@ -1,42 +1,57 @@
+/*
+ *    Copyright 2010-2023 the original author or authors.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *       https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 package org.mybatis.jpetstore.repository;
+
+import java.util.List;
 
 import org.mybatis.jpetstore.core.EventStore;
 import org.mybatis.jpetstore.core.event.DomainEvent;
 import org.mybatis.jpetstore.domain.Category;
 
-import java.util.List;
-
 public class EventSourcedCategoryRepository {
-    public EventSourcedCategoryRepository(EventStore eventStore) {
-        this.eventStore = eventStore;
+  public EventSourcedCategoryRepository(EventStore eventStore) {
+    this.eventStore = eventStore;
+  }
+
+  private EventStore eventStore;
+
+  public String save(Category category) {
+    String streamId = null;
+    for (DomainEvent e : category.getEvents()) {
+      try {
+        streamId = e.getStreamId();
+        eventStore.appendToStream(streamId, e);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
     }
+    return streamId;
+  }
 
-    private EventStore eventStore;
+  public Category findBy(String categoryId) {
+    String streamId = Category.class.getName() + "." + categoryId;
+    List<DomainEvent> events = eventStore.getStream(streamId);
+    Category category = new Category(categoryId);
 
-    public String save(Category category) {
-        String streamId = null;
-        for (DomainEvent e : category.getEvents()) {
-            try {
-                streamId = e.getStreamId();
-                eventStore.appendToStream(streamId,e);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-        return streamId;
+    for (DomainEvent event : events) {
+      // System.out.println("Mutate because of the event: " + event);
+      category.mutate(event);
+      // System.out.println("Object states after the mutate: " + category);
     }
-
-    public Category findBy(String categoryId) {
-        String streamId = Category.class.getName() + "." + categoryId;
-        List<DomainEvent> events = eventStore.getStream(streamId);
-        Category category = new Category(categoryId);
-
-        for (DomainEvent event : events) {
-            // System.out.println("Mutate because of the event: " + event);
-            category.mutate(event);
-            //System.out.println("Object states after the mutate: " + category);
-        }
-        return category;
-    }
+    return category;
+  }
 
 }

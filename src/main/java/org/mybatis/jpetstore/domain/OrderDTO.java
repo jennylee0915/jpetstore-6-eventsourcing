@@ -15,16 +15,14 @@
  */
 package org.mybatis.jpetstore.domain;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
-import org.mybatis.jpetstore.core.event.*;
+import org.mybatis.jpetstore.core.event.DomainEvent;
 
-public class Order implements Serializable {
-
-  private static final long serialVersionUID = 6321792448424424931L;
-
+public class OrderDTO {
   private String orderId;
   private String username;
   private Date orderDate;
@@ -54,92 +52,8 @@ public class Order implements Serializable {
   private List<LineItem> lineItems = new ArrayList<>();
   private List<DomainEvent> eventCache = new ArrayList<>();
 
-  public Order(String orderId) {
-    this.eventCache = new ArrayList<>();
-    this.orderId = orderId;
-  }
-
-  public Order() {
-    this.eventCache = new ArrayList<>();
-    this.orderId = UUID.randomUUID().toString();
-    OrderCreatedEvent event = new OrderCreatedEvent(getStreamId(), Order.class.getName(), orderId,
-        new Date().getTime());
-    cause(event);
-  }
-
   public String getOrderId() {
-    return this.orderId;
-  }
-
-  public String getStreamId() {
-    return Order.class.getName() + "." + this.orderId;
-  }
-
-  // 產生事件並加入到eventcache，同時負責調用mutate確保聚合根“內部”狀態更新
-  public void cause(DomainEvent event) {
-    mutate(event);
-    eventCache.add(event);
-  }
-
-  // 基於特定事件改變聚合根“內部”狀態
-  public void mutate(DomainEvent event) {
-    if (event instanceof OrderCreatedEvent) {
-      // pass
-    } else if (event instanceof OrderInitializedEvent) {
-      OrderInitializedEvent initEvent = (OrderInitializedEvent) event;
-      Account account = initEvent.getAccount();
-      Cart cart = initEvent.getCart();
-
-      username = account.getUsername();
-      orderDate = new Date();
-
-      shipToFirstName = account.getFirstName();
-      shipToLastName = account.getLastName();
-      shipAddress1 = account.getAddress1();
-      shipAddress2 = account.getAddress2();
-      shipCity = account.getCity();
-      shipState = account.getState();
-      shipZip = account.getZip();
-      shipCountry = account.getCountry();
-
-      billToFirstName = account.getFirstName();
-      billToLastName = account.getLastName();
-      billAddress1 = account.getAddress1();
-      billAddress2 = account.getAddress2();
-      billCity = account.getCity();
-      billState = account.getState();
-      billZip = account.getZip();
-      billCountry = account.getCountry();
-
-      totalPrice = cart.getSubTotal();
-
-      creditCard = "999 9999 9999 9999";
-      expiryDate = "12/03";
-      cardType = "Visa";
-      courier = "UPS";
-      locale = "CA";
-      status = "P";
-
-    } else if (event instanceof LineItemAddedToOrderEvent) {
-      LineItemAddedToOrderEvent lineItemEvent = (LineItemAddedToOrderEvent) event;
-      LineItem lineItem = new LineItem();
-      lineItem.setOrderId(orderId);
-      lineItem.setLineNumber(lineItems.size() + 1);
-      lineItem.setItem(lineItemEvent.getItem());
-      lineItem.setItemId(lineItemEvent.getItemId());
-      lineItem.setQuantity(lineItemEvent.getQuantity());
-      lineItem.setUnitPrice(lineItemEvent.getUnitPrice());
-      lineItem.setTotal(lineItem.getUnitPrice().multiply(new BigDecimal(lineItem.getQuantity())));
-      // 加入orde的lineitenm表中
-      addLineItem(lineItem);
-    } else if (event instanceof OrderInsertedEvent) {
-      // pass
-      // this.status = "Inserted";
-    } else if (event instanceof InventoryUpdatedEvent) {
-      // pass
-    } else {
-      throw new IllegalArgumentException();
-    }
+    return orderId;
   }
 
   public void setOrderId(String orderId) {
@@ -353,87 +267,4 @@ public class Order implements Serializable {
   public List<LineItem> getLineItems() {
     return lineItems;
   }
-
-  /**
-   * Inits the order.
-   *
-   * @param account
-   *          the account
-   * @param cart
-   *          the cart
-   */
-  public void initOrder(Account account, Cart cart) {
-
-    cause(new OrderInitializedEvent(getStreamId(), Order.class.getName(), account, cart, new Date().getTime()));
-
-    for (CartItem cartItem : cart.getCartItemList()) {
-      LineItemAddedToOrderEvent event = new LineItemAddedToOrderEvent(this.getStreamId(), Order.class.getName(),
-          cartItem.getItem(), cartItem.getItem().getItemId(), cartItem.getQuantity(), cartItem.getItem().getListPrice(),
-          new Date().getTime());
-      cause(event);
-    }
-
-    // Iterator<CartItem> i = cart.getAllCartItems();
-    // while (i.hasNext()) {
-    // CartItem cartItem = i.next();
-    // addLineItem(cartItem);
-    // }
-
-  }
-
-  public void addLineItem(CartItem cartItem) {
-    LineItem lineItem = new LineItem(lineItems.size() + 1, cartItem);
-    addLineItem(lineItem);
-  }
-
-  public void addLineItem(LineItem lineItem) {
-    lineItems.add(lineItem);
-  }
-
-  public List<DomainEvent> getEvents() {
-    return this.eventCache;
-  }
-
-  public OrderDTO toDTO() {
-    OrderDTO dto = new OrderDTO();
-    dto.setOrderId(this.orderId);
-    dto.setUsername(this.username);
-    dto.setOrderDate(this.orderDate);
-    dto.setShipAddress1(this.shipAddress1);
-    dto.setShipAddress2(this.shipAddress2);
-    dto.setShipCity(this.shipCity);
-    dto.setShipState(this.shipState);
-    dto.setShipZip(this.shipZip);
-    dto.setShipCountry(this.shipCountry);
-    dto.setBillAddress1(this.billAddress1);
-    dto.setBillAddress2(this.billAddress2);
-    dto.setBillCity(this.billCity);
-    dto.setBillState(this.billState);
-    dto.setBillZip(this.billZip);
-    dto.setBillCountry(this.billCountry);
-    dto.setCourier(this.courier);
-    dto.setTotalPrice(this.totalPrice);
-    dto.setBillToFirstName(this.billToFirstName);
-    dto.setBillToLastName(this.billToLastName);
-    dto.setShipToFirstName(this.shipToFirstName);
-    dto.setShipToLastName(this.shipToLastName);
-    dto.setCreditCard(this.creditCard);
-    dto.setExpiryDate(this.expiryDate);
-    dto.setCardType(this.cardType);
-    dto.setLocale(this.locale);
-    dto.setStatus(this.status);
-    dto.setLineItems(this.lineItems);
-
-    return dto;
-  }
-
-  public void reset() {
-    eventCache.clear();
-  }
-
-  @Override
-  public String toString() {
-    return String.format("Order{ orderId = '%s', username = '%s', orderDate = '%s' ", orderId, username, orderDate);
-  }
-
 }

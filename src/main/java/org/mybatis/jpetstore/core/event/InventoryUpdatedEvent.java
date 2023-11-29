@@ -15,20 +15,28 @@
  */
 package org.mybatis.jpetstore.core.event;
 
-import org.mybatis.jpetstore.domain.Order;
+public class InventoryUpdatedEvent extends DomainEvent {
+  private String itemId;
+  private int quantityChange;
 
-public class OrderCreatedEvent extends DomainEvent {
-
-  private Order order;
-  private String orderId;
-
-  public OrderCreatedEvent(String streamId, String entityType, String orderId, long timestamp) {
+  public InventoryUpdatedEvent(String streamId, String entityType, String itemId, int quantityChange, long timestamp) {
     super(streamId, entityType, timestamp);
-    this.orderId = orderId;
+    this.itemId = itemId;
+    this.quantityChange = quantityChange;
   }
 
-  public String getOrderId() {
-    return orderId;
+  public String getItemId() {
+    return itemId;
+  }
+
+  public int getQuantityChange() {
+    return quantityChange;
+  }
+
+  @Override
+  public String toString() {
+    return "InventoryChangeEvent{" + "itemId='" + itemId + '\'' + ", changeInQuantity=" + quantityChange + "} "
+        + super.toString();
   }
 
 }

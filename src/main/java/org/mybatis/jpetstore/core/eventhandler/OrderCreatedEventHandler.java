@@ -1,34 +1,40 @@
+/*
+ *    Copyright 2010-2023 the original author or authors.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *       https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 package org.mybatis.jpetstore.core.eventhandler;
 
-import org.mybatis.jpetstore.core.event.DomainEvent;
 import org.mybatis.jpetstore.core.event.OrderCreatedEvent;
 import org.mybatis.jpetstore.domain.Order;
 import org.mybatis.jpetstore.mapper.LineItemMapper;
 import org.mybatis.jpetstore.mapper.OrderMapper;
 
-public class OrderCreatedEventHandler implements DomainEventHandler<OrderCreatedEvent>{
-    private OrderMapper orderMapper;
-    private LineItemMapper lineItemMapper;
+public class OrderCreatedEventHandler implements DomainEventHandler<OrderCreatedEvent> {
+  private OrderMapper orderMapper;
+  private LineItemMapper lineItemMapper;
 
-    @Override
-    public void handle(OrderCreatedEvent event) {
-        /** x錯誤的方法x
-        Order order = event.getOrder();
+  @Override
+  public void handle(OrderCreatedEvent event) {
+    /**
+     * x錯誤的方法x Order order = event.getOrder(); orderMapper.insertOrder(order); orderMapper.insertOrderStatus(order);
+     * order.getLineItems().forEach(lineItem -> { lineItem.setOrderId(order.getOrderId());
+     * lineItemMapper.insertLineItem(lineItem); });
+     **/
+  }
 
-        
-        orderMapper.insertOrder(order);
-        orderMapper.insertOrderStatus(order);
-
-    
-        order.getLineItems().forEach(lineItem -> {
-            lineItem.setOrderId(order.getOrderId());
-            lineItemMapper.insertLineItem(lineItem);
-        });
-         **/
-    }
-
-    public OrderCreatedEventHandler(OrderMapper orderMapper){
-        this.orderMapper = orderMapper;
-    }
+  public OrderCreatedEventHandler(OrderMapper orderMapper) {
+    this.orderMapper = orderMapper;
+  }
 
 }

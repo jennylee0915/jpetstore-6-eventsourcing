@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
  */
 package org.mybatis.jpetstore.domain;
 
-import org.mybatis.jpetstore.core.event.AttributeUpdatedEvent;
-import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.EntityCreatedEvent;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+import org.mybatis.jpetstore.core.event.AttributeUpdatedEvent;
+import org.mybatis.jpetstore.core.event.DomainEvent;
+import org.mybatis.jpetstore.core.event.EntityCreatedEvent;
 
 /**
  * The Class Category.
@@ -46,14 +46,14 @@ public class Category implements Serializable {
     cause(new EntityCreatedEvent(getStreamId(), Category.class.getName(), new Date().getTime()));
   }
 
-  public Category(String categoryId){
+  public Category(String categoryId) {
     eventCache = new ArrayList<>();
     this.categoryId = categoryId;
   }
 
   private AttributeUpdatedEvent generateAttributeUpdatedEvent(String key, Object value) {
-    AttributeUpdatedEvent event =
-            new AttributeUpdatedEvent(getStreamId(), Category.class.getName(), new Date().getTime());
+    AttributeUpdatedEvent event = new AttributeUpdatedEvent(getStreamId(), Category.class.getName(),
+        new Date().getTime());
     event.setName(key);
     event.setValue(value);
     return event;
@@ -63,19 +63,18 @@ public class Category implements Serializable {
     return Category.class.getName() + "." + categoryId;
   }
 
-
-
   private void cause(DomainEvent event) {
     mutate(event);
     eventCache.add(event);
   }
 
-  public void mutate(DomainEvent event) { //依據進來的事件改變物件本身狀態
+  public void mutate(DomainEvent event) { // 依據進來的事件改變物件本身狀態
     if (event instanceof EntityCreatedEvent) {
       // applyCreatedEvent((EntityCreatedEvent<Category>) event);
     } else if (event instanceof AttributeUpdatedEvent) {
       applyUpdatedEvent((AttributeUpdatedEvent) event);
-    } else throw new IllegalArgumentException();
+    } else
+      throw new IllegalArgumentException();
 
   }
 
@@ -121,13 +120,12 @@ public class Category implements Serializable {
   public void setDescription(String description) {
     AttributeUpdatedEvent event = generateAttributeUpdatedEvent("description", description);
     cause(event);
-    //this.description = description;
+    // this.description = description;
   }
 
   @Override
   public String toString() {
-    return String.format("Category{categoryId='%s', name='%s', description='%s'}",
-            categoryId, name, description);
+    return String.format("Category{categoryId='%s', name='%s', description='%s'}", categoryId, name, description);
   }
 
 }
