@@ -110,7 +110,9 @@ public class Category implements Serializable {
   }
 
   public void setName(String name) {
-    this.name = name;
+    AttributeUpdatedEvent event = generateAttributeUpdatedEvent("name", name);
+    cause(event);
+    // this.name = name;
   }
 
   public String getDescription() {

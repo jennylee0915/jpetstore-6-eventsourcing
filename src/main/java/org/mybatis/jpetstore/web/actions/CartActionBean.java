@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@ import net.sourceforge.stripes.action.Resolution;
 import net.sourceforge.stripes.action.SessionScope;
 import net.sourceforge.stripes.integration.spring.SpringBean;
 
+import org.mybatis.jpetstore.core.EventStore;
 import org.mybatis.jpetstore.domain.Cart;
 import org.mybatis.jpetstore.domain.CartItem;
 import org.mybatis.jpetstore.domain.Item;
+import org.mybatis.jpetstore.repository.EventSourcedCartRepository;
 import org.mybatis.jpetstore.service.CatalogService;
 
 /**
@@ -44,6 +46,10 @@ public class CartActionBean extends AbstractActionBean {
 
   @SpringBean
   private transient CatalogService catalogService;
+  private final static EventStore eventStore = new EventStore(
+      "esdb://127.0.0.1:2113?tls=false&keepAliveTimeout=10000&keepAliveInterval=10000");
+
+  private final static EventSourcedCartRepository repository = new EventSourcedCartRepository(eventStore);
 
   private Cart cart = new Cart();
   private String workingItemId;
@@ -76,6 +82,7 @@ public class CartActionBean extends AbstractActionBean {
       Item item = catalogService.getItem(workingItemId);
       cart.addItem(item, isInStock);
     }
+    repository.save(cart);
 
     return new ForwardResolution(VIEW_CART);
   }
@@ -87,14 +94,24 @@ public class CartActionBean extends AbstractActionBean {
    */
   public Resolution removeItemFromCart() {
 
-    Item item = cart.removeItemById(workingItemId);
-
-    if (item == null) {
-      setMessage("Attempted to remove null CartItem from Cart.");
-      return new ForwardResolution(ERROR);
-    } else {
+    cart.removeItemById(workingItemId);
+    repository.save(cart);
+    // 改為檢查是否成功移除
+    if (!cart.containsItemId(workingItemId)) {
       return new ForwardResolution(VIEW_CART);
+    } else {
+      setMessage("Attempted to remove CartItem from Cart.");
+      return new ForwardResolution(ERROR);
     }
+
+    // Item item = cart.removeItemById(workingItemId);
+
+    // if (item == null) {
+    // setMessage("Attempted to remove null CartItem from Cart.");
+    // return new ForwardResolution(ERROR);
+    // } else {
+    // return new ForwardResolution(VIEW_CART);
+    // }
   }
 
   /**

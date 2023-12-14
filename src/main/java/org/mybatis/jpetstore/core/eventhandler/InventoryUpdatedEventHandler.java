@@ -16,20 +16,27 @@
 package org.mybatis.jpetstore.core.eventhandler;
 
 import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
-import org.mybatis.jpetstore.mapper.ItemMapper;
+import org.mybatis.jpetstore.readmodel.InventoryReadModel;
+import org.mybatis.jpetstore.repository.InventoryReadModelRepository;
 
 public class InventoryUpdatedEventHandler implements DomainEventHandler<InventoryUpdatedEvent> {
-  private ItemMapper itemMapper;
+  private InventoryReadModelRepository repository;
+
+  public InventoryUpdatedEventHandler() {
+    this.repository = new InventoryReadModelRepository();
+  }
 
   @Override
   public void handle(InventoryUpdatedEvent event) {
-    /**
-     * x錯誤的方法x Map<String, Object> param = new HashMap<>(2); param.put("itemId", event.getItemId());
-     * param.put("increment", event.getChangeInQuantity()); itemMapper.updateInventoryQuantity(param);
-     **/
-  }
+    String itemId = event.getItemId();
+    int quantityChange = event.getQuantityChange();
 
-  public InventoryUpdatedEventHandler(ItemMapper itemMapper) {
-    this.itemMapper = itemMapper;
+    InventoryReadModel inventory = repository.findByItemId(itemId);
+    if (inventory != null) {
+      int newQuantity = inventory.getQuantity() + quantityChange;
+      repository.updateInventory(itemId, newQuantity);
+    } else if (quantityChange > 0) {
+      repository.updateInventory(itemId, quantityChange);
+    }
   }
 }

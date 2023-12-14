@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@ package org.mybatis.jpetstore.domain;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import org.mybatis.jpetstore.core.event.*;
 
 /**
  * The Class Cart.
@@ -35,6 +32,17 @@ public class Cart implements Serializable {
 
   private final Map<String, CartItem> itemMap = Collections.synchronizedMap(new HashMap<>());
   private final List<CartItem> itemList = new ArrayList<>();
+  private List<DomainEvent> eventCache = new ArrayList<>();
+  private String cartId;
+
+  public Cart() {
+    this.eventCache = new ArrayList<>();
+    this.cartId = UUID.randomUUID().toString();
+  }
+  // public Cart(String cartId) {
+  // this.eventCache = new ArrayList<>();
+  // this.cartId = cartId;
+  // }
 
   public Iterator<CartItem> getCartItems() {
     return itemList.iterator();
@@ -56,6 +64,55 @@ public class Cart implements Serializable {
     return itemMap.containsKey(itemId);
   }
 
+  public void cause(DomainEvent event) {
+    mutate(event);
+    eventCache.add(event);
+  }
+
+  // 基於特定事件改變聚合根“內部”狀態
+  public void mutate(DomainEvent event) {
+    if (event instanceof AddedItemToCartEvent) {
+      AddedItemToCartEvent addedEvent = (AddedItemToCartEvent) event;
+      Item item = addedEvent.getItem();
+      boolean isInStock = addedEvent.getIsInStock();
+
+      CartItem cartItem = itemMap.get(item.getItemId());
+      if (cartItem == null) {
+        cartItem = new CartItem();
+        cartItem.setItem(item);
+        cartItem.setQuantity(0);
+        cartItem.setInStock(isInStock);
+        itemMap.put(item.getItemId(), cartItem);
+        itemList.add(cartItem);
+      }
+      cartItem.incrementQuantity();
+
+    } else if (event instanceof RemoveItemFromCartEvent) {
+      RemoveItemFromCartEvent RemoveItemEvent = (RemoveItemFromCartEvent) event;
+      String itemId = RemoveItemEvent.getItemId();
+
+      CartItem cartItem = itemMap.remove(itemId);
+      if (cartItem == null) {
+        Item item = null;
+      } else {
+        itemList.remove(cartItem);
+        Item item = cartItem.getItem();
+      }
+
+    } else if (event instanceof IncrementItemToCartEvent) {
+      IncrementItemToCartEvent incrementItemToCartEvent = (IncrementItemToCartEvent) event;
+      String itemId = incrementItemToCartEvent.getItemId();
+
+      CartItem cartItem = itemMap.get(itemId);
+      cartItem.incrementQuantity();
+
+    } else if (event instanceof InventoryUpdatedEvent) {
+      // pass
+    } else {
+      throw new IllegalArgumentException();
+    }
+  }
+
   /**
    * Adds the item.
    *
@@ -65,16 +122,18 @@ public class Cart implements Serializable {
    *          the is in stock
    */
   public void addItem(Item item, boolean isInStock) {
-    CartItem cartItem = itemMap.get(item.getItemId());
-    if (cartItem == null) {
-      cartItem = new CartItem();
-      cartItem.setItem(item);
-      cartItem.setQuantity(0);
-      cartItem.setInStock(isInStock);
-      itemMap.put(item.getItemId(), cartItem);
-      itemList.add(cartItem);
-    }
-    cartItem.incrementQuantity();
+    cause(new AddedItemToCartEvent(this.getStreamId(), Cart.class.getName(), item, isInStock, new Date().getTime()));
+
+    // CartItem cartItem = itemMap.get(item.getItemId());
+    // if (cartItem == null) {
+    // cartItem = new CartItem();
+    // cartItem.setItem(item);
+    // cartItem.setQuantity(0);
+    // cartItem.setInStock(isInStock);
+    // itemMap.put(item.getItemId(), cartItem);
+    // itemList.add(cartItem);
+    // }
+    // cartItem.incrementQuantity();
   }
 
   /**
@@ -85,14 +144,16 @@ public class Cart implements Serializable {
    *
    * @return the item
    */
-  public Item removeItemById(String itemId) {
-    CartItem cartItem = itemMap.remove(itemId);
-    if (cartItem == null) {
-      return null;
-    } else {
-      itemList.remove(cartItem);
-      return cartItem.getItem();
-    }
+  public void removeItemById(String itemId) {
+    cause(new RemoveItemFromCartEvent(this.getStreamId(), Cart.class.getName(), itemId, new Date().getTime()));
+
+    // CartItem cartItem = itemMap.remove(itemId);
+    // if (cartItem == null) {
+    // return null;
+    // } else {
+    // itemList.remove(cartItem);
+    // return cartItem.getItem();
+    // }
   }
 
   /**
@@ -102,8 +163,9 @@ public class Cart implements Serializable {
    *          the item id
    */
   public void incrementQuantityByItemId(String itemId) {
-    CartItem cartItem = itemMap.get(itemId);
-    cartItem.incrementQuantity();
+    cause(new IncrementItemToCartEvent(this.getStreamId(), Cart.class.getName(), itemId, new Date().getTime()));
+    // CartItem cartItem = itemMap.get(itemId);
+    // cartItem.incrementQuantity();
   }
 
   public void setQuantityByItemId(String itemId, int quantity) {
@@ -122,4 +184,15 @@ public class Cart implements Serializable {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
+  public String getStreamId() {
+    return Cart.class.getName() + "." + cartId;
+  }
+
+  public List<DomainEvent> getEvents() {
+    return this.eventCache;
+  }
+
+  public void reset() {
+    eventCache.clear();
+  }
 }

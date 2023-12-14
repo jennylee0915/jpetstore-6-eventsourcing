@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2022 the original author or authors.
+ *    Copyright 2010-2023 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,6 +16,14 @@
 package org.mybatis.jpetstore.domain;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import org.mybatis.jpetstore.core.event.AttributeUpdatedEvent;
+import org.mybatis.jpetstore.core.event.DomainEvent;
+import org.mybatis.jpetstore.core.event.EntityCreatedEvent;
 
 /**
  * The Class Product.
@@ -30,6 +38,64 @@ public class Product implements Serializable {
   private String categoryId;
   private String name;
   private String description;
+  private List<DomainEvent> eventCache;
+
+  public Product() {
+    eventCache = new ArrayList<>();
+    productId = UUID.randomUUID().toString();
+    cause(new EntityCreatedEvent(getStreamId(), Category.class.getName(), new Date().getTime()));
+  }
+
+  public Product(String productId) {
+    eventCache = new ArrayList<>();
+    this.productId = productId;
+  }
+
+  private AttributeUpdatedEvent generateAttributeUpdatedEvent(String key, Object value) {
+    AttributeUpdatedEvent event = new AttributeUpdatedEvent(getStreamId(), Product.class.getName(),
+        new Date().getTime());
+    event.setName(key);
+    event.setValue(value);
+    return event;
+  }
+
+  private String getStreamId() {
+    return Product.class.getName() + "." + productId;
+  }
+
+  private void cause(DomainEvent event) {
+    mutate(event);
+    eventCache.add(event);
+  }
+
+  public void mutate(DomainEvent event) { // 依據進來的事件改變物件本身狀態
+    if (event instanceof EntityCreatedEvent) {
+      // applyCreatedEvent((EntityCreatedEvent<Category>) event);
+    } else if (event instanceof AttributeUpdatedEvent) {
+      applyUpdatedEvent((AttributeUpdatedEvent) event);
+    } else
+      throw new IllegalArgumentException();
+
+  }
+
+  private void applyUpdatedEvent(AttributeUpdatedEvent event) {
+    switch (event.getName()) {
+      case "name":
+        this.name = (String) event.getValue();
+        break;
+      case "description":
+        this.description = (String) event.getValue();
+        break;
+    }
+  }
+
+  public List<DomainEvent> getEvents() {
+    return eventCache;
+  }
+
+  public void reset() {
+    eventCache.clear();
+  }
 
   public String getProductId() {
     return productId;
@@ -52,7 +118,9 @@ public class Product implements Serializable {
   }
 
   public void setName(String name) {
-    this.name = name;
+    AttributeUpdatedEvent event = generateAttributeUpdatedEvent("name", name);
+    cause(event);
+    // this.name = name;
   }
 
   public String getDescription() {
@@ -60,7 +128,9 @@ public class Product implements Serializable {
   }
 
   public void setDescription(String description) {
-    this.description = description;
+    AttributeUpdatedEvent event = generateAttributeUpdatedEvent("description", description);
+    cause(event);
+    // this.description = description;
   }
 
   @Override

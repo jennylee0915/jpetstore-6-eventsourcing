@@ -23,6 +23,8 @@ import org.mybatis.jpetstore.core.event.DomainEvent;
 import org.mybatis.jpetstore.core.event.EntityNotFoundException;
 import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
 import org.mybatis.jpetstore.core.event.OrderInsertedEvent;
+import org.mybatis.jpetstore.core.eventhandler.DomainEventPublisher;
+import org.mybatis.jpetstore.core.eventhandler.InventoryUpdatedEventHandler;
 import org.mybatis.jpetstore.domain.Order;
 import org.mybatis.jpetstore.domain.OrderDTO;
 import org.mybatis.jpetstore.domain.Sequence;
@@ -46,6 +48,7 @@ public class OrderService {
   private final OrderMapper orderMapper;
   private final SequenceMapper sequenceMapper;
   private final LineItemMapper lineItemMapper;
+  private DomainEventPublisher eventPublisher;
   private final static EventStore eventStore = new EventStore(
       "esdb://127.0.0.1:2113?tls=false&keepAliveTimeout=10000&keepAliveInterval=10000");
   private final static EventSourcedOrderRepository repository = new EventSourcedOrderRepository(eventStore);
@@ -56,6 +59,8 @@ public class OrderService {
     this.orderMapper = orderMapper;
     this.sequenceMapper = sequenceMapper;
     this.lineItemMapper = lineItemMapper;
+    this.eventPublisher = new DomainEventPublisher();
+    this.eventPublisher.registerHandler(InventoryUpdatedEvent.class, new InventoryUpdatedEventHandler());
   }
 
   /**
@@ -76,6 +81,7 @@ public class OrderService {
       InventoryUpdatedEvent inventoryEvent = new InventoryUpdatedEvent(order.getStreamId(), Order.class.getName(),
           lineItem.getItemId(), -lineItem.getQuantity(), new Date().getTime());
       order.cause(inventoryEvent);
+      eventPublisher.publish(inventoryEvent);
     });
     // order.setOrderId(getNextId("ordernum"));
     // order.getLineItems().forEach(lineItem -> {

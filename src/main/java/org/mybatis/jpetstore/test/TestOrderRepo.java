@@ -19,11 +19,7 @@ import java.util.List;
 
 import org.mybatis.jpetstore.core.EventStore;
 import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
-import org.mybatis.jpetstore.core.event.OrderCreatedEvent;
 import org.mybatis.jpetstore.core.eventhandler.DomainEventPublisher;
-import org.mybatis.jpetstore.core.eventhandler.InventoryUpdatedEventHandler;
-import org.mybatis.jpetstore.core.eventhandler.OrderCreatedEventHandler;
 import org.mybatis.jpetstore.domain.Order;
 import org.mybatis.jpetstore.mapper.ItemMapper;
 import org.mybatis.jpetstore.mapper.OrderMapper;
@@ -43,8 +39,8 @@ public class TestOrderRepo {
 
   private static void testCreate() {
     DomainEventPublisher eventPublisher = new DomainEventPublisher();
-    eventPublisher.registerHandler(OrderCreatedEvent.class, new OrderCreatedEventHandler(orderMapper));
-    eventPublisher.registerHandler(InventoryUpdatedEvent.class, new InventoryUpdatedEventHandler(itemMapper));
+    // eventPublisher.registerHandler(OrderCreatedEvent.class, new OrderCreatedEventHandler(orderMapper));
+    // eventPublisher.registerHandler(InventoryUpdatedEvent.class, new InventoryUpdatedEventHandler(itemMapper));
 
     Order order = new Order();
     repository.save(order);
