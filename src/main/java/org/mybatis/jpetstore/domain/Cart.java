@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.mybatis.jpetstore.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
@@ -26,6 +28,7 @@ import org.mybatis.jpetstore.core.event.*;
  *
  * @author Eduardo Macarron
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Cart implements Serializable {
 
   private static final long serialVersionUID = 8329559983943337176L;

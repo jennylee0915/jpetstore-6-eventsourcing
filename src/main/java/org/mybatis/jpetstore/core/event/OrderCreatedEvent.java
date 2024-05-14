@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.mybatis.jpetstore.core.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.mybatis.jpetstore.domain.Order;
 
 public class OrderCreatedEvent extends DomainEvent {
@@ -22,7 +24,8 @@ public class OrderCreatedEvent extends DomainEvent {
   private Order order;
   private String orderId;
 
-  public OrderCreatedEvent(String streamId, String entityType, String orderId, long timestamp) {
+  public OrderCreatedEvent(@JsonProperty("streamId") String streamId, @JsonProperty("entityType") String entityType,
+      @JsonProperty("orderId") String orderId, @JsonProperty("timestamp") long timestamp) {
     super(streamId, entityType, timestamp);
     this.orderId = orderId;
   }

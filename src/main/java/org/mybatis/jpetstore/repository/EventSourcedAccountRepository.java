@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toList;
 import java.util.*;
 
 import org.mybatis.jpetstore.core.EventStore;
+import org.mybatis.jpetstore.core.event.AccountCreatedEvent;
 import org.mybatis.jpetstore.core.event.DomainEvent;
 import org.mybatis.jpetstore.domain.Account;
 
@@ -101,6 +102,19 @@ public class EventSourcedAccountRepository {
       account.mutate(event);
     }
     return account;
+  }
+
+  public List<AccountCreatedEvent> getAccountEvents() {
+    String streamPrefix = "org.mybatis.jpetstore.domain.Account.";
+
+    List<AccountCreatedEvent> allEvents = new ArrayList<>();
+    for (DomainEvent event : eventStore.getEventsByStreamPrefix(streamPrefix)) {
+      if (event instanceof AccountCreatedEvent) {
+        allEvents.add((AccountCreatedEvent) event);
+      }
+    }
+    allEvents.sort(Comparator.comparing(e -> e.getTimestamp()));
+    return allEvents;
   }
 
 }

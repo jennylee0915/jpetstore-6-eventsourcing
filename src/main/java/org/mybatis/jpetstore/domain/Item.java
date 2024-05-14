@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,27 +15,33 @@
  */
 package org.mybatis.jpetstore.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
-import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
+import org.mybatis.jpetstore.core.event.*;
 
 /**
  * The Class Item.
  *
  * @author Eduardo Macarron
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Item implements Serializable {
 
   private static final long serialVersionUID = -2159121673445254631L;
 
   private String itemId;
   private String productId;
+  @JsonProperty("listPrice")
   private BigDecimal listPrice;
+  @JsonProperty("unitCost")
   private BigDecimal unitCost;
   private int supplierId;
   private String status;
@@ -46,6 +52,7 @@ public class Item implements Serializable {
   private String attribute5;
   private Product product;
   private int quantity;
+  private String itemStreamId;
 
   private List<DomainEvent> eventCache = new ArrayList<>();
 
@@ -58,6 +65,15 @@ public class Item implements Serializable {
 
   }
 
+  public Item(String itemId, String productId, BigDecimal listPrice, BigDecimal unitCost, int supplierId, String status,
+      String attribute1) {
+    eventCache = new ArrayList<>();
+    itemStreamId = UUID.randomUUID().toString();
+    ItemCreatedEvent event = new ItemCreatedEvent(getStreamId(), Category.class.getName(), new Date().getTime(), itemId,
+        productId, listPrice, unitCost, supplierId, status, attribute1);
+    cause(event);
+  }
+
   public void changeQuantity(int quantityChange) {
     InventoryUpdatedEvent event = new InventoryUpdatedEvent(getStreamId(), Item.class.getName(), this.itemId,
         quantityChange, new Date().getTime());
@@ -65,7 +81,7 @@ public class Item implements Serializable {
   }
 
   public String getStreamId() {
-    return Item.class.getName() + "." + this.itemId;
+    return Item.class.getName() + "." + this.itemStreamId;
   }
 
   private void cause(DomainEvent event) {
@@ -76,9 +92,21 @@ public class Item implements Serializable {
   public void mutate(DomainEvent event) {
     if (event instanceof InventoryUpdatedEvent) {
       applyInventoryChangeEvent((InventoryUpdatedEvent) event);
+    } else if (event instanceof ItemCreatedEvent) {
+      applyCreatedEvent((ItemCreatedEvent) event);
     } else {
       throw new IllegalArgumentException("Unsupported event type");
     }
+  }
+
+  private void applyCreatedEvent(ItemCreatedEvent event) {
+    this.itemId = event.getItemId();
+    this.productId = event.getProductId();
+    this.listPrice = event.getListPrice();
+    this.unitCost = event.getUnitCost();
+    this.supplierId = event.getSupplierId();
+    this.status = event.getStatus();
+    this.attribute1 = event.getAttribute1();
   }
 
   private void applyInventoryChangeEvent(InventoryUpdatedEvent event) {
@@ -107,6 +135,14 @@ public class Item implements Serializable {
 
   public void setProduct(Product product) {
     this.product = product;
+  }
+
+  public String getProductId() {
+    return productId;
+  }
+
+  public void setProductId(String productId) {
+    this.productId = productId;
   }
 
   public int getSupplierId() {
@@ -183,7 +219,7 @@ public class Item implements Serializable {
 
   @Override
   public String toString() {
-    return "(" + getItemId() + "-" + getProduct().getProductId() + ")";
+    return "(" + getItemId() + "-" + getProductId() + ")";
   }
 
   public List<DomainEvent> getEvents() {

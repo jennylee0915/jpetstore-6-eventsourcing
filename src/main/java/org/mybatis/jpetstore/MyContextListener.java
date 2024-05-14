@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -13,17 +13,22 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package org.mybatis.jpetstore.core.eventhandler;
+package org.mybatis.jpetstore;
 
-import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.OrderCreatedEvent;
+import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
 
-public class InventoryService implements DomainEventHandler {
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+public class MyContextListener implements ServletContextListener {
+
   @Override
-  public void handle(DomainEvent event) {
-    if (event instanceof OrderCreatedEvent) {
-      // 減少庫存的邏輯...
-    }
+  public void contextInitialized(ServletContextEvent sce) {
   }
 
+  @Override
+  public void contextDestroyed(ServletContextEvent sce) {
+
+    AbandonedConnectionCleanupThread.checkedShutdown();
+  }
 }

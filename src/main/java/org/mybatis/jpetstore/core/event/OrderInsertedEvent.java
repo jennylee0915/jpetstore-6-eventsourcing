@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,13 +15,16 @@
  */
 package org.mybatis.jpetstore.core.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.mybatis.jpetstore.domain.OrderDTO;
 
 public class OrderInsertedEvent extends DomainEvent {
 
   private OrderDTO orderDTO;
 
-  public OrderInsertedEvent(String streamId, String entityType, OrderDTO orderDTO, long timestamp) {
+  public OrderInsertedEvent(@JsonProperty("streamId") String streamId, @JsonProperty("entityType") String entityType,
+      @JsonProperty("orderDTO") OrderDTO orderDTO, @JsonProperty("timestamp") long timestamp) {
     super(streamId, entityType, timestamp);
     this.orderDTO = orderDTO;
   }

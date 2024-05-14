@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 package org.mybatis.jpetstore.web.actions;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import javax.servlet.http.HttpSession;
 
@@ -30,6 +27,7 @@ import net.sourceforge.stripes.action.SessionScope;
 import net.sourceforge.stripes.integration.spring.SpringBean;
 
 import org.mybatis.jpetstore.core.EventStore;
+import org.mybatis.jpetstore.core.event.AccountCreatedEvent;
 import org.mybatis.jpetstore.domain.Account;
 import org.mybatis.jpetstore.domain.Product;
 import org.mybatis.jpetstore.repository.EventSourcedAccountRepository;
@@ -130,8 +128,12 @@ public class AccountActionBean extends AbstractActionBean {
   public Resolution newAccount() {
     // accountService.insertAccount(account);
     // account = accountService.getAccount(account.getUsername());
-    this.repository.save(account);
-    account = this.repository.findBy(account.getAccountId());
+    Account newAccount = new Account(account.getUsername(), account.getPassword(), account.getRepeatedPassword(),
+        account.getEmail(), account.getFirstName(), account.getLastName(), account.getStatus(), account.getAddress1(),
+        account.getAddress2(), account.getCity(), account.getState(), account.getZip(), account.getCountry(),
+        account.getPhone(), account.getFavouriteCategoryId(), account.getLanguagePreference(), account.isListOption(),
+        account.isBannerOption(), account.getBannerName());
+    this.repository.save(newAccount);
     myList = catalogService.getProductListByCategory(account.getFavouriteCategoryId());
     authenticated = true;
     return new RedirectResolution(CatalogActionBean.class);
@@ -156,23 +158,13 @@ public class AccountActionBean extends AbstractActionBean {
     // account = accountService.getAccount(account.getUsername());
     // myList = catalogService.getProductListByCategory(account.getFavouriteCategoryId());
 
-    Account queryAccount = repository.findBy(account.getAccountId());
-    queryAccount.setPassword(account.getPassword());
-    queryAccount.setFirstName(account.getFirstName());
-    queryAccount.setLastName(account.getLastName());
-    queryAccount.setEmail(account.getEmail());
-    queryAccount.setPhone(account.getPhone());
-    queryAccount.setAddress1(account.getAddress1());
-    queryAccount.setAddress2(account.getAddress2());
-    queryAccount.setCity(account.getCity());
-    queryAccount.setState(account.getState());
-    queryAccount.setZip(account.getZip());
-    queryAccount.setCountry(account.getCountry());
-    queryAccount.setLanguagePreference(account.getLanguagePreference());
-    queryAccount.setFavouriteCategoryId(account.getFavouriteCategoryId());
-    queryAccount.setListOption(account.isListOption());
-    queryAccount.setBannerOption(account.isBannerOption());
+    Account queryAccount = new Account(account.getAccountId(), account.getPassword(), account.getRepeatedPassword(),
+        account.getEmail(), account.getFirstName(), account.getLastName(), account.getStatus(), account.getAddress1(),
+        account.getAddress2(), account.getCity(), account.getState(), account.getZip(), account.getCountry(),
+        account.getPhone(), account.getFavouriteCategoryId(), account.getLanguagePreference(), account.isListOption(),
+        account.isBannerOption(), account.getBannerName());
     repository.save(queryAccount);
+    myList = catalogService.getProductListByCategory(account.getFavouriteCategoryId());
     return new RedirectResolution(CatalogActionBean.class);
   }
 
@@ -212,24 +204,27 @@ public class AccountActionBean extends AbstractActionBean {
   // }
 
   public Resolution signon() {
-    Optional<Account> queryAccount = repository.findAll().stream()
-        .filter(account1 -> account1.getUsername().equals(account.getUsername())
-            && account1.getPassword().equals(account.getPassword()))
-        .findFirst();
-    if (queryAccount.isPresent()) {
-      account = queryAccount.get();
+    List<AccountCreatedEvent> accountEvents = repository.getAccountEvents();
+
+    AccountCreatedEvent matchedEvent = accountEvents.stream().filter(
+        event -> event.getUsername().equals(account.getUsername()) && event.getPassword().equals(account.getPassword()))
+        .findFirst().orElse(null);
+    if (matchedEvent == null) {
+      String value = "Invalid username or password. Signon failed";
+      setMessage(value);
+      clear();
+      return new ForwardResolution(SIGNON);
+    } else {
+      Account queryAcount = new Account(matchedEvent.getAccountId());
+      account = queryAcount;
       account.setPassword(null);
-      myList = catalogService.getProductListByCategory(account.getFavouriteCategoryId());
+      account.setUsername(matchedEvent.getUsername());
+      myList = catalogService.getProductListByCategory(matchedEvent.getFavouriteCategoryId());
       authenticated = true;
       HttpSession s = context.getRequest().getSession();
       // this bean is already registered as /actions/Account.action
       s.setAttribute("accountBean", this);
       return new RedirectResolution(CatalogActionBean.class);
-    } else {
-      String value = "Invalid username or password. Signon failed";
-      setMessage(value);
-      clear();
-      return new ForwardResolution(SIGNON);
     }
   }
 

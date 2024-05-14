@@ -1,6 +1,6 @@
 <%--
 
-       Copyright 2010-2022 the original author or authors.
+       Copyright 2010-2024 the original author or authors.
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@
 				<stripes:param name="itemId" value="${item.itemId}" />
 				${item.itemId}
 			</stripes:link></td>
-			<td>${item.product.productId}</td>
+			<td>${item.productId}</td>
 			<td>${item.attribute1} ${item.attribute2} ${item.attribute3}
 			${item.attribute4} ${item.attribute5} ${actionBean.product.name}</td>
 			<td><fmt:formatNumber value="${item.listPrice}"

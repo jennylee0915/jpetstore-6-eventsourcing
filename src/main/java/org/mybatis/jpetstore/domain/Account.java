@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,21 +15,22 @@
  */
 package org.mybatis.jpetstore.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.mybatis.jpetstore.core.event.AttributeUpdatedEvent;
-import org.mybatis.jpetstore.core.event.DomainEvent;
-import org.mybatis.jpetstore.core.event.EntityCreatedEvent;
+import org.mybatis.jpetstore.core.event.*;
 
 /**
  * The Class Account.
  *
  * @author Eduardo Macarron
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Account implements Serializable {
 
   private static final long serialVersionUID = 8751282105532159742L;
@@ -60,12 +61,24 @@ public class Account implements Serializable {
   public Account() {
     this.eventCache = new ArrayList<>();
     this.accountId = UUID.randomUUID().toString();
-    cause(new EntityCreatedEvent(getStreamId(), Account.class.getName(), new Date().getTime()));
+    // cause(new EntityCreatedEvent(getStreamId(), Account.class.getName(), new Date().getTime()));
   }
 
   public Account(String accountId) {
     this.eventCache = new ArrayList<>();
     this.accountId = accountId;
+  }
+
+  public Account(String username, String password, String repeatedPassword, String email, String firstName,
+      String lastName, String status, String address1, String address2, String city, String state, String zip,
+      String country, String phone, String favouriteCategoryId, String languagePreference, boolean listOption,
+      boolean bannerOption, String bannerName) {
+    eventCache = new ArrayList<>();
+    accountId = UUID.randomUUID().toString();
+    AccountCreatedEvent event = new AccountCreatedEvent(getStreamId(), Account.class.getName(), new Date().getTime(),
+        accountId, username, password, repeatedPassword, email, firstName, lastName, status, address1, address2, city,
+        state, zip, country, phone, favouriteCategoryId, languagePreference, listOption, bannerOption, bannerName);
+    cause(event);
   }
 
   public String getAccountId() {
@@ -82,12 +95,33 @@ public class Account implements Serializable {
   }
 
   public void mutate(DomainEvent event) {
-    if (event instanceof EntityCreatedEvent) {
-      // pass
+    if (event instanceof AccountCreatedEvent) {
+      applyCreatedEvent((AccountCreatedEvent) event);
     } else if (event instanceof AttributeUpdatedEvent) {
       applyUpdatedEvent((AttributeUpdatedEvent) event);
     } else
       throw new IllegalArgumentException();
+  }
+
+  private void applyCreatedEvent(AccountCreatedEvent event) {
+    this.username = event.getUsername();
+    this.password = (String) event.getPassword();
+    this.email = (String) event.getEmail();
+    this.firstName = (String) event.getFirstName();
+    this.lastName = (String) event.getLastName();
+    this.status = (String) event.getStatus();
+    this.address1 = (String) event.getAddress1();
+    this.address2 = (String) event.getAddress2();
+    this.city = (String) event.getCity();
+    this.state = (String) event.getState();
+    this.zip = (String) event.getZip();
+    this.country = (String) event.getCountry();
+    this.phone = (String) event.getPhone();
+    this.favouriteCategoryId = (String) event.getFavouriteCategoryId();
+    this.languagePreference = (String) event.getLanguagePreference();
+    this.listOption = (boolean) event.isListOption();
+    this.bannerOption = (boolean) event.isBannerOption();
+    this.bannerName = (String) event.getBannerName();
   }
 
   private void applyUpdatedEvent(AttributeUpdatedEvent event) {
@@ -162,11 +196,7 @@ public class Account implements Serializable {
   }
 
   public void setUsername(String username) {
-    if (this.username == null || !this.username.equals(username)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("username", username);
-      cause(event);
-    }
-    // this.username = username;
+    this.username = username;
   }
 
   public String getPassword() {
@@ -174,11 +204,7 @@ public class Account implements Serializable {
   }
 
   public void setPassword(String password) {
-    if (this.password == null || !this.password.equals(password)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("password", password);
-      cause(event);
-    }
-    // this.password = password;
+    this.password = password;
   }
 
   public String getRepeatedPassword() {
@@ -194,11 +220,7 @@ public class Account implements Serializable {
   }
 
   public void setEmail(String email) {
-    if (this.email == null || !this.email.equals(email)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("email", email);
-      cause(event);
-    }
-    // this.email = email;
+    this.email = email;
   }
 
   public String getFirstName() {
@@ -207,11 +229,7 @@ public class Account implements Serializable {
 
   // @Validate(required = true, on = { "newAccount", "editAccount" })
   public void setFirstName(String firstName) {
-    if (this.firstName == null || !this.firstName.equals(firstName)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("firstName", firstName);
-      cause(event);
-    }
-    // this.firstName = firstName;
+    this.firstName = firstName;
   }
 
   public String getLastName() {
@@ -220,11 +238,7 @@ public class Account implements Serializable {
 
   // @Validate(required = true, on = { "newAccount", "editAccount" })
   public void setLastName(String lastName) {
-    if (this.lastName == null || !this.lastName.equals(lastName)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("lastName", lastName);
-      cause(event);
-    }
-    // this.lastName = lastName;
+    this.lastName = lastName;
   }
 
   public String getStatus() {
@@ -232,11 +246,7 @@ public class Account implements Serializable {
   }
 
   public void setStatus(String status) {
-    if (this.status == null || !this.status.equals(status)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("status", status);
-      cause(event);
-    }
-    // this.status = status;
+    this.status = status;
   }
 
   public String getAddress1() {
@@ -244,11 +254,7 @@ public class Account implements Serializable {
   }
 
   public void setAddress1(String address1) {
-    if (this.address1 == null || !this.address1.equals(address1)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("address1", address1);
-      cause(event);
-    }
-    // this.address1 = address1;
+    this.address1 = address1;
   }
 
   public String getAddress2() {
@@ -256,11 +262,7 @@ public class Account implements Serializable {
   }
 
   public void setAddress2(String address2) {
-    if (this.address2 == null || !this.address2.equals(address2)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("address2", address2);
-      cause(event);
-    }
-    // this.address2 = address2;
+    this.address2 = address2;
   }
 
   public String getCity() {
@@ -268,11 +270,7 @@ public class Account implements Serializable {
   }
 
   public void setCity(String city) {
-    if (this.city == null || !this.city.equals(city)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("city", city);
-      cause(event);
-    }
-    // this.city = city;
+    this.city = city;
   }
 
   public String getState() {
@@ -280,11 +278,7 @@ public class Account implements Serializable {
   }
 
   public void setState(String state) {
-    if (this.state == null || !this.state.equals(state)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("state", state);
-      cause(event);
-    }
-    // this.state = state;
+    this.state = state;
   }
 
   public String getZip() {
@@ -292,11 +286,7 @@ public class Account implements Serializable {
   }
 
   public void setZip(String zip) {
-    if (this.zip == null || !this.zip.equals(zip)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("zip", zip);
-      cause(event);
-    }
-    // this.zip = zip;
+    this.zip = zip;
   }
 
   public String getCountry() {
@@ -304,11 +294,7 @@ public class Account implements Serializable {
   }
 
   public void setCountry(String country) {
-    if (this.country == null || !this.country.equals(country)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("country", country);
-      cause(event);
-    }
-    // this.country = country;
+    this.country = country;
   }
 
   public String getPhone() {
@@ -316,11 +302,7 @@ public class Account implements Serializable {
   }
 
   public void setPhone(String phone) {
-    if (this.phone == null || !this.phone.equals(phone)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("phone", phone);
-      cause(event);
-    }
-    // this.phone = phone;
+    this.phone = phone;
   }
 
   public String getFavouriteCategoryId() {
@@ -328,11 +310,7 @@ public class Account implements Serializable {
   }
 
   public void setFavouriteCategoryId(String favouriteCategoryId) {
-    if (this.favouriteCategoryId == null || !this.favouriteCategoryId.equals(favouriteCategoryId)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("favouriteCategoryId", favouriteCategoryId);
-      cause(event);
-    }
-    // this.favouriteCategoryId = favouriteCategoryId;
+    this.favouriteCategoryId = favouriteCategoryId;
   }
 
   public String getLanguagePreference() {
@@ -340,11 +318,7 @@ public class Account implements Serializable {
   }
 
   public void setLanguagePreference(String languagePreference) {
-    if (this.languagePreference == null || !this.languagePreference.equals(languagePreference)) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("languagePreference", languagePreference);
-      cause(event);
-    }
-    // this.languagePreference = languagePreference;
+    this.languagePreference = languagePreference;
   }
 
   public boolean isListOption() {
@@ -352,11 +326,7 @@ public class Account implements Serializable {
   }
 
   public void setListOption(boolean listOption) {
-    if (this.listOption != listOption) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("listOption", listOption);
-      cause(event);
-    }
-    // this.listOption = listOption;
+    this.listOption = listOption;
   }
 
   public boolean isBannerOption() {
@@ -364,11 +334,7 @@ public class Account implements Serializable {
   }
 
   public void setBannerOption(boolean bannerOption) {
-    if (this.bannerOption != bannerOption) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("bannerOption", bannerOption);
-      cause(event);
-    }
-    // this.bannerOption = bannerOption;
+    this.bannerOption = bannerOption;
   }
 
   public String getBannerName() {
@@ -376,11 +342,7 @@ public class Account implements Serializable {
   }
 
   public void setBannerName(String bannerName) {
-    if (this.bannerName != bannerName) {
-      AttributeUpdatedEvent event = generateAttributeUpdatedEvent("bannerName", bannerName);
-      cause(event);
-    }
-    // this.bannerName = bannerName;
+    this.bannerName = bannerName;
   }
 
   public void reset() {

@@ -13,15 +13,21 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package org.mybatis.jpetstore.core.event;
+package org.mybatis.jpetstore.test;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.mybatis.jpetstore.service.InventoryService;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 
-import java.io.Serializable;
+public class TestInventoryService {
+  private InventoryService inventoryService;
 
-public class EntityCreatedEvent extends DomainEvent implements Serializable {
-  public EntityCreatedEvent(@JsonProperty("streamId") String id, @JsonProperty("entityType") String entityType,
-      @JsonProperty("timestamp") long timestamp) {
-    super(id, entityType, timestamp);
+  public static void main(String args[]) {
+    // test();
+    ApplicationContext context = new FileSystemXmlApplicationContext(
+        "file:src/main/webapp/WEB-INF/applicationContext.xml");
+    InventoryService service = context.getBean(InventoryService.class);
+    service.subscribeOrderStream();
+    service.subscribeInvnetoryUpdatedStream();
   }
 }

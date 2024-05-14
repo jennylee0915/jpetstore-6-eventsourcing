@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.mybatis.jpetstore.core.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.mybatis.jpetstore.domain.Account;
 import org.mybatis.jpetstore.domain.Cart;
 
@@ -23,7 +25,9 @@ public class OrderInitializedEvent extends DomainEvent {
   private Account account;
   private Cart cart;
 
-  public OrderInitializedEvent(String streamId, String entityType, Account account, Cart cart, long timestamp) {
+  public OrderInitializedEvent(@JsonProperty("streamId") String streamId, @JsonProperty("entityType") String entityType,
+      @JsonProperty("account") Account account, @JsonProperty("cart") Cart cart,
+      @JsonProperty("timestamp") long timestamp) {
     super(streamId, entityType, timestamp);
     this.account = account;
     this.cart = cart;

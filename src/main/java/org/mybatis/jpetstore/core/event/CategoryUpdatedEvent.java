@@ -17,11 +17,11 @@ package org.mybatis.jpetstore.core.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class AttributeUpdatedEvent extends DomainEvent {
+public class CategoryUpdatedEvent extends DomainEvent {
   private String name;
   private Object value;
 
-  public AttributeUpdatedEvent(@JsonProperty("streamId") String id, @JsonProperty("entityType") String entityType,
+  public CategoryUpdatedEvent(@JsonProperty("streamId") String id, @JsonProperty("entityType") String entityType,
       @JsonProperty("timestamp") long timestamp) {
     super(id, entityType, timestamp);
   }
@@ -43,7 +43,7 @@ public class AttributeUpdatedEvent extends DomainEvent {
   }
 
   public String toString() {
-    return "EntityUpdatedEvent{" + "entity=" + this.getEntityType() + ", timestamp=" + this.getTimestamp() + ", name="
+    return "CategoryUpdatedEvent{" + "entity=" + this.getEntityType() + ", timestamp=" + this.getTimestamp() + ", name="
         + this.getName() + ", value=" + this.getValue() + '}';
   }
 

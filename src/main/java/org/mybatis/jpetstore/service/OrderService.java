@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.mybatis.jpetstore.core.event.EntityNotFoundException;
 import org.mybatis.jpetstore.core.event.InventoryUpdatedEvent;
 import org.mybatis.jpetstore.core.event.OrderInsertedEvent;
 import org.mybatis.jpetstore.core.eventhandler.DomainEventPublisher;
-import org.mybatis.jpetstore.core.eventhandler.InventoryUpdatedEventHandler;
+// import org.mybatis.jpetstore.core.eventhandler.InventoryUpdatedEventHandler;
 import org.mybatis.jpetstore.domain.Order;
 import org.mybatis.jpetstore.domain.OrderDTO;
 import org.mybatis.jpetstore.domain.Sequence;
@@ -60,7 +60,7 @@ public class OrderService {
     this.sequenceMapper = sequenceMapper;
     this.lineItemMapper = lineItemMapper;
     this.eventPublisher = new DomainEventPublisher();
-    this.eventPublisher.registerHandler(InventoryUpdatedEvent.class, new InventoryUpdatedEventHandler());
+    // this.eventPublisher.registerHandler(InventoryUpdatedEvent.class, new InventoryUpdatedEventHandler());
   }
 
   /**

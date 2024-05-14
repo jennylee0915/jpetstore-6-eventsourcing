@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.mybatis.jpetstore.core.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 
 import org.mybatis.jpetstore.domain.Item;
@@ -26,8 +28,10 @@ public class LineItemAddedToOrderEvent extends DomainEvent {
 
   private Item item;
 
-  public LineItemAddedToOrderEvent(String streamId, String entityType, Item item, String itemId, int quantity,
-      BigDecimal unitPrice, long timestamp) {
+  public LineItemAddedToOrderEvent(@JsonProperty("streamId") String streamId,
+      @JsonProperty("entityType") String entityType, @JsonProperty("item") Item item,
+      @JsonProperty("itemId") String itemId, @JsonProperty("quantity") int quantity,
+      @JsonProperty("unitPrice") BigDecimal unitPrice, @JsonProperty("timestamp") long timestamp) {
     super(streamId, entityType, timestamp);
     this.item = item;
     this.itemId = itemId;

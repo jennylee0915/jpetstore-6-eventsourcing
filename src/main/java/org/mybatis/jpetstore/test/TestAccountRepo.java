@@ -1,5 +1,5 @@
 /*
- *    Copyright 2010-2023 the original author or authors.
+ *    Copyright 2010-2024 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package org.mybatis.jpetstore.test;
 
+import java.util.List;
+
 import org.mybatis.jpetstore.core.EventStore;
+import org.mybatis.jpetstore.core.event.DomainEvent;
 import org.mybatis.jpetstore.domain.Account;
 import org.mybatis.jpetstore.repository.EventSourcedAccountRepository;
 
@@ -25,7 +28,11 @@ public class TestAccountRepo {
   private final static EventSourcedAccountRepository repository = new EventSourcedAccountRepository(eventStore);
 
   public static void main(String[] args) {
-    String accountId = testCreate();
+    List<DomainEvent> allEvents = eventStore.getAllStream();
+    for (DomainEvent event : allEvents) {
+      System.out.println(event);
+    }
+    // String accountId = testCreate();
     // testFindBy(accountId);
     // testAppend(accountId);
     // testFindBy(accountId, 4);

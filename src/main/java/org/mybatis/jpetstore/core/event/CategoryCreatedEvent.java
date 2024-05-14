@@ -17,34 +17,32 @@ package org.mybatis.jpetstore.core.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class AttributeUpdatedEvent extends DomainEvent {
-  private String name;
-  private Object value;
+import java.io.Serializable;
 
-  public AttributeUpdatedEvent(@JsonProperty("streamId") String id, @JsonProperty("entityType") String entityType,
-      @JsonProperty("timestamp") long timestamp) {
+public class CategoryCreatedEvent extends DomainEvent implements Serializable {
+
+  private String categoryId;
+  private String name;
+  private String description;
+
+  public CategoryCreatedEvent(@JsonProperty("streamId") String id, @JsonProperty("entityType") String entityType,
+      @JsonProperty("timestamp") long timestamp, @JsonProperty("categoryId") String categoryId,
+      @JsonProperty("name") String name, @JsonProperty("description") String description) {
     super(id, entityType, timestamp);
+    this.categoryId = categoryId;
+    this.name = name;
+    this.description = description;
+  }
+
+  public String getCategoryId() {
+    return categoryId;
   }
 
   public String getName() {
     return name;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public String getDescription() {
+    return description;
   }
-
-  public Object getValue() {
-    return value;
-  }
-
-  public void setValue(Object value) {
-    this.value = value;
-  }
-
-  public String toString() {
-    return "EntityUpdatedEvent{" + "entity=" + this.getEntityType() + ", timestamp=" + this.getTimestamp() + ", name="
-        + this.getName() + ", value=" + this.getValue() + '}';
-  }
-
 }
